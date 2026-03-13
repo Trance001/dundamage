@@ -151,6 +151,16 @@
         </div>
       </section>
 
+      <!-- Full Ranking Chart -->
+      <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-lg font-bold mb-4 text-slate-800 text-center">
+          전체 세트 조합 데미지 랭킹
+        </h3>
+        <div style="position: relative; width: 100%; height: 1200px;">
+          <canvas id="fullBarChart"></canvas>
+        </div>
+      </section>
+
       <!-- Data Explorer Section -->
       <section
         class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
@@ -224,7 +234,59 @@
       </section>
     </main>
 
-    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm mt-12">
+    <!-- Formula & Notes Section -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-8">
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- 최종 데미지 계산 공식 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-lg font-bold text-slate-900 mb-4 border-b border-slate-200 pb-2">최종 데미지 계산 공식</h3>
+          <div class="space-y-3 text-sm text-slate-700">
+            <div class="bg-slate-50 p-3 rounded-lg font-mono text-xs leading-relaxed">
+              최종 데미지 = [스킬 계수] × [스탯 보정] × [공격력 증가] × [속성 보정] × [최종 데미지 증가] × [방어율 보정]
+            </div>
+            <ul class="space-y-2 list-none">
+              <li><span class="font-semibold text-slate-900">스탯 보정</span> &mdash; 일반: 1 + (힘 or 지능) / 250 &nbsp;|&nbsp; 상태이상: 2 + (힘+지능) / 166.25</li>
+              <li><span class="font-semibold text-slate-900">공격력 증가</span> &mdash; 장비 공격력 증가 %를 <em>단리(합산)</em>하여 적용</li>
+              <li><span class="font-semibold text-slate-900">속성 보정</span> &mdash; 1.05 + (내 속강 &minus; 적 속저) / 222</li>
+              <li><span class="font-semibold text-slate-900">최종 데미지(스증)</span> &mdash; 각 장비별 <em>복리(곱연산)</em> 적용: (1+스증1) × (1+스증2) × &hellip;</li>
+              <li><span class="font-semibold text-slate-900">특수 보정</span> &mdash; 크리티컬 1.5배 &nbsp;|&nbsp; 카운터 1.25배</li>
+            </ul>
+            <div class="bg-indigo-50 p-3 rounded-lg text-xs text-indigo-800 mt-2">
+              <span class="font-semibold">환산 기준:</span> 스증 12% = 쿨감 20% &nbsp;|&nbsp; 딜쿨비 1:2 &nbsp;|&nbsp; 3000%/S = 1%
+            </div>
+          </div>
+        </div>
+
+        <!-- 우려사항 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-rose-200">
+          <h3 class="text-lg font-bold text-rose-800 mb-4 border-b border-rose-200 pb-2">우려사항 및 주의점</h3>
+          <ul class="space-y-3 text-sm text-slate-700">
+            <li class="flex gap-2">
+              <span class="text-rose-500 font-bold shrink-0">1.</span>
+              <span><span class="font-semibold">쿨감 스증환산의 신뢰도</span> &mdash; 이론상 쿨감 → 스증 환산(CDR/(1-CDR) × 0.5)은 100% 효율을 가정하나, 실전에서는 딜 사이클·보스 패턴·이동 시간 등으로 인해 실제 효율이 낮아질 수 있습니다.</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-rose-500 font-bold shrink-0">2.</span>
+              <span><span class="font-semibold">조건부 스증 반영</span> &mdash; 일부 조합의 스증은 조건부(백어택, 30초/60초 업타임, 파티 버프 등)이며, 시트에서는 최대치 기준으로 계산되어 있어 실전 수치와 차이가 발생할 수 있습니다.</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-rose-500 font-bold shrink-0">3.</span>
+              <span><span class="font-semibold">파티 버프 환산</span> &mdash; 무리 2·3 등 파티 버프 조합은 개인 딜 환산 시 분배 기준이 명확하지 않아 최종뎀이 상대적으로 낮게 표시됩니다.</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-rose-500 font-bold shrink-0">4.</span>
+              <span><span class="font-semibold">반올림 오차</span> &mdash; 칠흑3(-4.50% vs 계산치 -4.55%), 황금향+칠흑(5.50% vs 5.56%) 등 일부 쿨감 환산값에 미세 반올림 차이가 존재합니다.</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-rose-500 font-bold shrink-0">5.</span>
+              <span><span class="font-semibold">개별 스킬 효과</span> &mdash; 에테 3의 "개별스킬 40%"처럼 전체 딜이 아닌 특정 스킬에만 적용되는 효과는 단순 비교가 어렵습니다.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm">
       <p>※ 쿨감 환산 공식: 쿨감 효율 = (1 / (1 - 쿨감)) - 1 × 반영 비율</p>
     </footer>
 
@@ -350,6 +412,7 @@
 
       let scatterChart = null;
       let barChart = null;
+      let fullBarChart = null;
 
       function renderCharts() {
         // Scatter
@@ -431,6 +494,48 @@
             scales: {
               x: { title: { display: true, text: "최종 데미지" } },
               y: { grid: { display: false } },
+            },
+          },
+        });
+
+        // Full Bar
+        const fullBarCtx = document.getElementById("fullBarChart").getContext("2d");
+        const allSorted = [...appData].sort((a, b) => b.finalDmg - a.finalDmg);
+
+        if (fullBarChart) fullBarChart.destroy();
+        fullBarChart = new Chart(fullBarCtx, {
+          type: "bar",
+          data: {
+            labels: allSorted.map((d) => d.name),
+            datasets: [
+              {
+                label: "최종 데미지",
+                data: allSorted.map((d) => d.finalDmg),
+                backgroundColor: allSorted.map((d) =>
+                  d.cdrConvStd > 0 ? "#e11d48" : d.cdrConvStd < 0 ? "#60a5fa" : "#6366f1"
+                ),
+                borderRadius: 3,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (c) => `최종 데미지: ${c.raw.toFixed(3)}`,
+                },
+              },
+            },
+            scales: {
+              x: { title: { display: true, text: "최종 데미지" } },
+              y: {
+                grid: { display: false },
+                ticks: { font: { size: 11 } },
+              },
             },
           },
         });
