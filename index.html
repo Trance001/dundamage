@@ -1,418 +1,508 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>던전앤파이터 장비 조합 분석 대시보드</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>던전앤파이터 장비 조합 분석 대시보드 (Interactive)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Chosen Palette: Slate & Indigo (Professional, Analytical, Calm) -->
-    <!-- Application Structure Plan: 
-         1. Header & Intro: Establishes context, explains the "CDR Conversion" controversy.
-         2. Analytical Dashboard: 
-            a. Scatter Plot: Visualizes the correlation between CDR Conversion and Final Damage, helping users see if high CDR truly means high damage.
-            b. Top 10 Bar Chart: A quick leaderboard for immediate comparison.
-         3. Raw Data Explorer: A fully sortable and filterable data table for deep-dive analysis.
-         This structure was chosen to guide the user from high-level concepts (controversy) to visual patterns (charts) and finally to granular details (table). 
-    -->
-    <!-- Visualization & Content Choices: 
-         1. Intro Text Block -> Goal: Inform -> Method: HTML/Tailwind styling -> Justifies the underlying logic of the report.
-         2. Scatter Plot (Chart.js) -> Goal: Relationships -> X: CDR Conv, Y: Final Dmg -> Method: Canvas -> Shows the clustering and outliers of CDR heavy builds.
-         3. Horizontal Bar Chart (Chart.js) -> Goal: Rank -> Top 10 combinations -> Method: Canvas -> Easy comparison of the best theoretical builds.
-         4. Data Table -> Goal: Organize/Explore -> Method: HTML/JS Table -> Allows users to find specific combinations.
-         CONFIRMING: No SVG or Mermaid JS used. All visual elements are Canvas or structured HTML. 
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <style>
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 350px;
+        max-height: 450px;
+      }
+      @media (min-width: 768px) {
         .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 350px;
-            max-height: 450px;
+          height: 400px;
         }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 400px;
-            }
-        }
-        
-        /* Custom scrollbar for table */
-        .table-container::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        .table-container::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-            border-radius: 4px;
-        }
-        .table-container::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        .table-container::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+      }
 
+      .table-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .table-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+      }
+      .table-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .table-container::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      input[type="range"] {
+        accent-color: #4f46e5;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans antialiased">
     <!-- Header Section -->
-    <header class="bg-indigo-900 text-white py-10 px-4 shadow-md">
-        <div class="max-w-7xl mx-auto">
-            <h1 class="text-3xl md:text-4xl font-bold mb-2">던전앤파이터 장비 조합 및 쿨타임 환산 분석</h1>
-            <p class="text-indigo-200 text-lg">'쿨감 스증환산' 기반의 이론적 최종 데미지 시뮬레이션 데이터 탐색기</p>
+    <header class="bg-indigo-900 text-white py-8 px-4 shadow-md">
+      <div
+        class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6"
+      >
+        <div>
+          <h1 class="text-3xl font-bold mb-1">
+            던전앤파이터 장비 조합 분석 대시보드
+          </h1>
+          <p class="text-indigo-200">
+            쿨감 환산 비율 조절에 따른 실시간 데미지 시뮬레이션
+          </p>
         </div>
+        <!-- CDR Ratio Controller -->
+        <div
+          class="bg-indigo-800 p-4 rounded-xl border border-indigo-700 shadow-inner w-full md:w-auto"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-semibold text-indigo-100"
+              >쿨감 실전 반영 비율 (Efficiency)</label
+            >
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                id="ratioInput"
+                step="1"
+                min="70"
+                max="100"
+                value="100"
+                class="w-16 bg-indigo-900 border border-indigo-600 rounded px-2 py-1 text-center text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+              <span class="text-sm text-indigo-200">%</span>
+            </div>
+          </div>
+          <input
+            type="range"
+            id="ratioSlider"
+            min="70"
+            max="100"
+            step="1"
+            value="100"
+            class="w-full h-2 bg-indigo-900 rounded-lg appearance-none cursor-pointer"
+          />
+          <div
+            class="flex justify-between text-[10px] text-indigo-300 mt-1 uppercase tracking-tighter"
+          >
+            <span>70% (보수적)</span>
+            <span>85% (중간)</span>
+            <span>100% (시트 기준)</span>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <!-- Main Content Container -->
     <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-12">
+      <!-- Info Cards -->
+      <section class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3
+            class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1"
+          >
+            현재 1위 조합
+          </h3>
+          <p id="topBuildName" class="text-xl font-bold text-indigo-700">-</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3
+            class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1"
+          >
+            평균 최종 데미지
+          </h3>
+          <p id="avgFinalDmg" class="text-xl font-bold text-slate-900">0.000</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3
+            class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1"
+          >
+            세팅 간 편차 (Max-Min)
+          </h3>
+          <p id="dmgRange" class="text-xl font-bold text-rose-600">0.000</p>
+        </div>
+      </section>
 
-        <!-- Context & Controversy Section -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-            <h2 class="text-2xl font-bold text-slate-900 mb-4 border-b pb-2 border-slate-100">분석 개요: 쿨감 스증환산의 딜레마</h2>
-            <p class="mb-4 leading-relaxed text-slate-600">
-                이 대시보드는 다양한 장비 조합(황금향, 칠흑 등)의 최종 데미지를 계산한 데이터를 기반으로 합니다. 
-                특히 논란이 되는 <strong class="text-indigo-600 bg-indigo-50 px-1 rounded">쿨감 스증환산</strong> 지표를 집중적으로 분석합니다.
+      <!-- Visual Analytics Section -->
+      <section class="grid lg:grid-cols-2 gap-8">
+        <!-- Scatter Plot -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-lg font-bold mb-4 text-slate-800 text-center">
+            상관관계: 쿨감 환산 vs 최종 데미지
+          </h3>
+          <div class="chart-container">
+            <canvas id="scatterChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Bar Chart -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 class="text-lg font-bold mb-4 text-slate-800 text-center">
+            Top 10: 실시간 데미지 랭킹
+          </h3>
+          <div class="chart-container">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Data Explorer Section -->
+      <section
+        class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+      >
+        <div
+          class="p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">
+              상세 데이터 탐색기
+            </h2>
+            <p class="text-sm text-slate-500 mt-1">
+              비율 조절에 따라 실시간으로 변화하는 수치를 확인하세요.
             </p>
-            <div class="grid md:grid-cols-2 gap-6 mt-6">
-                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
-                    <h3 class="font-bold text-lg mb-2 text-indigo-800">📊 이론적 기준 (표의 방식)</h3>
-                    <ul class="list-disc pl-5 space-y-1 text-sm text-slate-700">
-                        <li>스증 12% = 쿨감 20% (딜쿨비 1:2)</li>
-                        <li>쿨타임 감소를 100% 데미지 상승으로 직결시킨 환산.</li>
-                        <li><strong>특징:</strong> 가장 완벽한 사이클을 굴렸을 때의 고점을 보여주는 시뮬레이션용 지표. 칠흑 등 쿨감 장비의 가치가 극대화됨.</li>
-                    </ul>
-                </div>
-                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
-                    <h3 class="font-bold text-lg mb-2 text-rose-700">⚠️ 실전적 한계 (논란의 이유)</h3>
-                    <ul class="list-disc pl-5 space-y-1 text-sm text-slate-700">
-                        <li>플레이어의 반응 속도 한계 및 몬스터 무적 패턴.</li>
-                        <li>각성기(진각, 2각)에는 쿨타임 감소가 적용되지 않음.</li>
-                        <li><strong>결과:</strong> 표에 기재된 65.4% 같은 높은 환산율은 실전에서 온전히 데미지로 치환되지 않으며, 보통 20~30%의 실전 누수율이 발생.</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
+          </div>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="조합명 검색..."
+            class="px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm w-full md:w-64"
+          />
+        </div>
 
-        <!-- Visual Analytics Section -->
-        <section class="space-y-8">
-            <div class="text-center max-w-3xl mx-auto">
-                <h2 class="text-2xl font-bold text-slate-900">데이터 시각화</h2>
-                <p class="text-slate-500 mt-2">쿨감 환산 수치가 최종 데미지에 미치는 영향과 상위 세팅을 한눈에 비교합니다.</p>
-            </div>
-
-            <div class="grid lg:grid-cols-2 gap-8">
-                <!-- Scatter Plot -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-bold mb-4 text-slate-800 text-center">상관관계: 쿨감 스증환산 vs 최종 데미지</h3>
-                    <p class="text-xs text-slate-500 text-center mb-4">우측 상단에 위치할수록 쿨감 의존도가 높으면서 데미지도 높은 세팅입니다.</p>
-                    <div class="chart-container">
-                        <canvas id="scatterChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Bar Chart -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-bold mb-4 text-slate-800 text-center">Top 10: 이론상 최종 데미지 랭킹</h3>
-                    <p class="text-xs text-slate-500 text-center mb-4">가장 높은 데미지 포텐셜을 가진 세팅 목록입니다.</p>
-                    <div class="chart-container">
-                        <canvas id="barChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Data Explorer Section -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-900">상세 데이터 탐색기</h2>
-                    <p class="text-sm text-slate-500 mt-1">모든 세트의 수치를 직접 비교하고 검색해보세요.</p>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="searchInput" placeholder="조합명 검색 (예: 칠흑)" class="px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm w-full md:w-64">
-                </div>
-            </div>
-            
-            <div class="table-container overflow-x-auto max-h-[600px]">
-                <table class="w-full text-left border-collapse min-w-[1000px]">
-                    <thead class="bg-slate-100 sticky top-0 z-10">
-                        <tr>
-                            <th class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200" onclick="sortTable('name')">조합명 ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200" onclick="sortTable('mainDmg')">본장비 최종뎀 ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200" onclick="sortTable('oathDmg')">서약 최종뎀 ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 border-b">본장비/서약 스증</th>
-                            <th class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200 bg-indigo-50" onclick="sortTable('cdrConv')">쿨감 스증환산 ↕</th>
-                            <th class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200" onclick="sortTable('gearConv')">장비딜 스증환산 ↕</th>
-                            <th class="p-4 font-semibold text-indigo-900 border-b cursor-pointer hover:bg-indigo-100 bg-indigo-50" onclick="sortTable('finalDmg')">최종뎀 ↕</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody" class="divide-y divide-slate-200">
-                        <!-- Data will be populated here via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+        <div class="table-container overflow-x-auto max-h-[600px]">
+          <table class="w-full text-left border-collapse min-w-[1000px]">
+            <thead class="bg-slate-100 sticky top-0 z-10">
+              <tr>
+                <th
+                  class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200"
+                  onclick="sortTable('name')"
+                >
+                  조합명 ↕
+                </th>
+                <th
+                  class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200"
+                  onclick="sortTable('mainDmg')"
+                >
+                  본장비 최종뎀 ↕
+                </th>
+                <th
+                  class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200"
+                  onclick="sortTable('oathDmg')"
+                >
+                  서약 최종뎀 ↕
+                </th>
+                <th
+                  class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-indigo-100 bg-indigo-50/50"
+                  onclick="sortTable('cdrConvAdj')"
+                >
+                  쿨감 환산(%) ↕
+                </th>
+                <th
+                  class="p-4 font-semibold text-slate-700 border-b cursor-pointer hover:bg-slate-200"
+                  onclick="sortTable('gearConv')"
+                >
+                  장비딜 환산(%) ↕
+                </th>
+                <th
+                  class="p-4 font-semibold text-indigo-900 border-b cursor-pointer hover:bg-indigo-100 bg-indigo-50"
+                  onclick="sortTable('finalDmg')"
+                >
+                  최종 데미지 ↕
+                </th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody" class="divide-y divide-slate-200">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
     <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm mt-12">
-        <p>본 데이터는 이론적 계산식에 기반하며, 실전 세팅 시 유저의 숙련도 및 환경에 따라 차이가 발생할 수 있습니다.</p>
+      <p>※ 쿨감 환산 공식: 쿨감 효율 = (1 / (1 - 쿨감)) - 1 × 반영 비율</p>
     </footer>
 
     <script>
-        // Data Extraction & Cleaning
-        const rawData = [
-            { name: "황금향 1", mainDmg: "-", oathDmg: "518.0%", mainSkill: "-", oathSkill: "13.2%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "44.262" },
-            { name: "황금향 2", mainDmg: "532.7%", oathDmg: "471.7%", mainSkill: "12% + 4%", oathSkill: "6%+0.5%+1.5%+2.5%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "46.696" },
-            { name: "황금향 3", mainDmg: "-", oathDmg: "497.1%", mainSkill: "-", oathSkill: "10.0%", cdr: "-", cdrConv: "-", gearConv: "2.78%", finalDmg: "42.711" },
-            { name: "칠흑 + 황금향", mainDmg: "418.9%", oathDmg: "471.7%", mainSkill: "-", oathSkill: "6%+0.5%+1.5%+2.5%", cdr: "55%", cdrConv: "61.11%", gearConv: "-", finalDmg: "52.971" },
-            { name: "칠흑 1", mainDmg: "-", oathDmg: "502.9%", mainSkill: "-", oathSkill: "0.0%", cdr: "MAX(56.69%)", cdrConv: "65.446%", gearConv: "-", finalDmg: "51.759" },
-            { name: "칠흑 2", mainDmg: "418.9%", oathDmg: "471.4%", mainSkill: "-", oathSkill: "2% + 17.5%", cdr: "30% + 10%", cdrConv: "29.36%", gearConv: "-", finalDmg: "45.969" },
-            { name: "칠흑 3", mainDmg: "-", oathDmg: "505.1%", mainSkill: "-", oathSkill: "42.0%", cdr: "-10%", cdrConv: "-4.50%", gearConv: "-", finalDmg: "42.580" },
-            { name: "황금향 + 칠흑", mainDmg: "532.7%", oathDmg: "471.4%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "10%", cdrConv: "5.50%", gearConv: "1.08%", finalDmg: "45.226" },
-            { name: "용투 1", mainDmg: "594.1%", oathDmg: "428.1%", mainSkill: "3.0%", oathSkill: "10% (30초/60초)", cdr: "-", cdrConv: "-", gearConv: "8.91%", finalDmg: "43.175" },
-            { name: "용투 2", mainDmg: "594.1%", oathDmg: "500.0%", mainSkill: "3.0%", oathSkill: "2.5%", cdr: "-", cdrConv: "-", gearConv: "3.24%", finalDmg: "45.392" },
-            { name: "용투 3", mainDmg: "-", oathDmg: "406.8%", mainSkill: "-", oathSkill: "30.0%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "45.730" },
-            { name: "황금향 + 용투", mainDmg: "532.7%", oathDmg: "500.0%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "1.08%", finalDmg: "45.014" },
-            { name: "칠흑 + 용투", mainDmg: "418.9%", oathDmg: "500.0%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "-", finalDmg: "50.160" },
-            { name: "에테 1", mainDmg: "-", oathDmg: "625.8%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "15.93%", finalDmg: "45.201" },
-            { name: "에테 2", mainDmg: "437.2%", oathDmg: "330.7%", mainSkill: "-", oathSkill: "12.1% + 80%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "46.686" },
-            { name: "에테 3", mainDmg: "-", oathDmg: "657.0%", mainSkill: "-", oathSkill: "개별스킬 40%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "40.666" },
-            { name: "황금향 + 에테", mainDmg: "532.7%", oathDmg: "330.7%", mainSkill: "12% + 4%", oathSkill: "40.0%", cdr: "-", cdrConv: "-", gearConv: "1.08%", finalDmg: "45.237" },
-            { name: "칠흑 + 에테", mainDmg: "418.9%", oathDmg: "330.7%", mainSkill: "-", oathSkill: "40.0%", cdr: "55%", cdrConv: "61.11%", gearConv: "-", finalDmg: "50.409" },
-            { name: "그림자 1", mainDmg: "615.4%", oathDmg: "478.2%", mainSkill: "-", oathSkill: "10%(백어택)", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "45.501" },
-            { name: "그림자 2", mainDmg: "-", oathDmg: "500.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "4.20%", finalDmg: "44.727" },
-            { name: "그림자 3", mainDmg: "-", oathDmg: "518.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "44.212" },
-            { name: "황금향 + 그림자", mainDmg: "532.7%", oathDmg: "500.0%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "1.08%", finalDmg: "45.014" },
-            { name: "칠흑 + 그림자", mainDmg: "418.9%", oathDmg: "500.0%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "-", finalDmg: "50.160" },
-            { name: "발키리 1", mainDmg: "569.8%", oathDmg: "529.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "2.76%", finalDmg: "43.293" },
-            { name: "발키리 2", mainDmg: "569.8%", oathDmg: "472.4%", mainSkill: "-", oathSkill: "3.0%", cdr: "-", cdrConv: "-", gearConv: "10.60%", finalDmg: "43.675" },
-            { name: "발키리 3", mainDmg: "569.8%", oathDmg: "411.9%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "25.59%", finalDmg: "43.061" },
-            { name: "황금향 + 발키리", mainDmg: "532.7%", oathDmg: "472.4%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "5.76%", finalDmg: "44.613" },
-            { name: "칠흑 + 발키리", mainDmg: "418.9%", oathDmg: "472.4%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "4.69%", finalDmg: "50.097" },
-            { name: "자연 1", mainDmg: "558.3%", oathDmg: "564.5%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "1.70%", finalDmg: "44.488" },
-            { name: "자연 2", mainDmg: "558.3%", oathDmg: "482.5%", mainSkill: "-", oathSkill: "3.5%", cdr: "-", cdrConv: "-", gearConv: "12.03%", finalDmg: "44.463" },
-            { name: "자연 3", mainDmg: "-", oathDmg: "537.5%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "4.86%", finalDmg: "44.006" },
-            { name: "황금향 + 자연", mainDmg: "532.7%", oathDmg: "482.5%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "4.86%", finalDmg: "45.014" },
-            { name: "칠흑 + 자연", mainDmg: "418.9%", oathDmg: "482.5%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "3.78%", finalDmg: "50.538" },
-            { name: "마력 1", mainDmg: "456.4%", oathDmg: "590.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "12.60%", finalDmg: "43.229" },
-            { name: "마력 2", mainDmg: "456.4%", oathDmg: "464.0%", mainSkill: "-", oathSkill: "2.0%", cdr: "-", cdrConv: "-", gearConv: "44.69%", finalDmg: "46.313" },
-            { name: "마력 3", mainDmg: "-", oathDmg: "473.2%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "46.20%", finalDmg: "46.627" },
-            { name: "황금향 + 마력", mainDmg: "532.7%", oathDmg: "464.0%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "7.38%", finalDmg: "44.632" },
-            { name: "칠흑 + 마력", mainDmg: "418.9%", oathDmg: "464.0%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "6.30%", finalDmg: "50.121" },
-            { name: "페어리 1", mainDmg: "462.8%", oathDmg: "488.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "25.81%", finalDmg: "41.634" },
-            { name: "페어리 2", mainDmg: "462.8%", oathDmg: "476.2%", mainSkill: "-", oathSkill: "1.9%", cdr: "-", cdrConv: "-", gearConv: "37.76%", finalDmg: "45.522" },
-            { name: "페어리 3", mainDmg: "-", oathDmg: "471.2%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "36.54%", finalDmg: "43.894" },
-            { name: "황금향 + 페어리", mainDmg: "532.7%", oathDmg: "476.2%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "5.28%", finalDmg: "44.706" },
-            { name: "칠흑 + 페어리", mainDmg: "418.9%", oathDmg: "476.2%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "4.20%", finalDmg: "50.198" },
-            { name: "무리 1", mainDmg: "493.8%", oathDmg: "514.1%", mainSkill: "-", oathSkill: "20.0%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "43.758" },
-            { name: "무리 2", mainDmg: "493.8%", oathDmg: "500.0%", mainSkill: "파티8%", oathSkill: "2.5%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "36.519" },
-            { name: "무리 3", mainDmg: "-", oathDmg: "517.0%", mainSkill: "-", oathSkill: "1명 스증 16%", cdr: "-", cdrConv: "-", gearConv: "-", finalDmg: "36.637" },
-            { name: "황금향 + 무리", mainDmg: "532.7%", oathDmg: "500.0%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "1.08%", finalDmg: "45.014" },
-            { name: "칠흑 + 무리", mainDmg: "418.9%", oathDmg: "500.0%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "-", finalDmg: "50.160" },
-            { name: "한계 1", mainDmg: "460.7%", oathDmg: "384.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "2.87%", finalDmg: "27.917" },
-            { name: "한계 2", mainDmg: "460.7%", oathDmg: "457.0%", mainSkill: "-", oathSkill: "5.0%", cdr: "-", cdrConv: "-", gearConv: "2.39%", finalDmg: "33.576" },
-            { name: "한계 3", mainDmg: "-", oathDmg: "417.0%", mainSkill: "-", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "1.98%", finalDmg: "29.562" },
-            { name: "황금향 + 한계", mainDmg: "532.7%", oathDmg: "457.0%", mainSkill: "12% + 4%", oathSkill: "-", cdr: "-", cdrConv: "-", gearConv: "1.08%", finalDmg: "41.788" },
-            { name: "칠흑 + 한계", mainDmg: "418.9%", oathDmg: "457.0%", mainSkill: "-", oathSkill: "-", cdr: "55%", cdrConv: "61.11%", gearConv: "-", finalDmg: "46.565" }
-        ];
+      // 던전앤파이터 장비 조합 데이터 시트.md 기준 전체 데이터
+      // cdrConvStd: 시트 기준 쿨감 스증환산(%), baseFinalDmg: 시트 기준 최종뎀
+      const rawData = [
+        { name: "황금향 1", mainDmg: "-", oathDmg: "518.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 44.262 },
+        { name: "황금향 2", mainDmg: "532.7%", oathDmg: "471.7%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 46.696 },
+        { name: "황금향 3", mainDmg: "-", oathDmg: "497.1%", cdrConvStd: 0, gearConv: "2.78%", baseFinalDmg: 42.711 },
+        { name: "칠흑 + 황금향", mainDmg: "418.9%", oathDmg: "471.7%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 52.971 },
+        { name: "칠흑 1", mainDmg: "-", oathDmg: "502.9%", cdrConvStd: 65.446, gearConv: "-", baseFinalDmg: 51.759 },
+        { name: "칠흑 2", mainDmg: "418.9%", oathDmg: "471.4%", cdrConvStd: 29.36, gearConv: "-", baseFinalDmg: 45.969 },
+        { name: "칠흑 3", mainDmg: "-", oathDmg: "505.1%", cdrConvStd: -4.50, gearConv: "-", baseFinalDmg: 42.580 },
+        { name: "황금향 + 칠흑", mainDmg: "532.7%", oathDmg: "471.4%", cdrConvStd: 5.50, gearConv: "1.08%", baseFinalDmg: 45.226 },
+        { name: "용투 1", mainDmg: "594.1%", oathDmg: "428.1%", cdrConvStd: 0, gearConv: "8.91%", baseFinalDmg: 43.175 },
+        { name: "용투 2", mainDmg: "594.1%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "3.24%", baseFinalDmg: 45.392 },
+        { name: "용투 3", mainDmg: "-", oathDmg: "406.8%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 45.730 },
+        { name: "황금향 + 용투", mainDmg: "532.7%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.014 },
+        { name: "칠흑 + 용투", mainDmg: "418.9%", oathDmg: "500.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.160 },
+        { name: "에테 1", mainDmg: "-", oathDmg: "625.8%", cdrConvStd: 0, gearConv: "15.93%", baseFinalDmg: 45.201 },
+        { name: "에테 2", mainDmg: "437.2%", oathDmg: "330.7%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 46.686 },
+        { name: "에테 3", mainDmg: "-", oathDmg: "657.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 40.666 },
+        { name: "황금향 + 에테", mainDmg: "532.7%", oathDmg: "330.7%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.237 },
+        { name: "칠흑 + 에테", mainDmg: "418.9%", oathDmg: "330.7%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.409 },
+        { name: "그림자 1", mainDmg: "615.4%", oathDmg: "478.2%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 45.501 },
+        { name: "그림자 2", mainDmg: "-", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "4.20%", baseFinalDmg: 44.727 },
+        { name: "그림자 3", mainDmg: "-", oathDmg: "518.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 44.212 },
+        { name: "황금향 + 그림자", mainDmg: "532.7%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.014 },
+        { name: "칠흑 + 그림자", mainDmg: "418.9%", oathDmg: "500.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.160 },
+        { name: "발키리 1", mainDmg: "569.8%", oathDmg: "529.0%", cdrConvStd: 0, gearConv: "2.76%", baseFinalDmg: 43.293 },
+        { name: "발키리 2", mainDmg: "569.8%", oathDmg: "472.4%", cdrConvStd: 0, gearConv: "10.60%", baseFinalDmg: 43.675 },
+        { name: "발키리 3", mainDmg: "569.8%", oathDmg: "411.9%", cdrConvStd: 0, gearConv: "25.59%", baseFinalDmg: 43.061 },
+        { name: "황금향 + 발키리", mainDmg: "532.7%", oathDmg: "472.4%", cdrConvStd: 0, gearConv: "5.76%", baseFinalDmg: 44.613 },
+        { name: "칠흑 + 발키리", mainDmg: "418.9%", oathDmg: "472.4%", cdrConvStd: 61.11, gearConv: "4.69%", baseFinalDmg: 50.097 },
+        { name: "자연 1", mainDmg: "558.3%", oathDmg: "564.5%", cdrConvStd: 0, gearConv: "1.70%", baseFinalDmg: 44.488 },
+        { name: "자연 2", mainDmg: "558.3%", oathDmg: "482.5%", cdrConvStd: 0, gearConv: "12.03%", baseFinalDmg: 44.463 },
+        { name: "자연 3", mainDmg: "-", oathDmg: "537.5%", cdrConvStd: 0, gearConv: "4.86%", baseFinalDmg: 44.006 },
+        { name: "황금향 + 자연", mainDmg: "532.7%", oathDmg: "482.5%", cdrConvStd: 0, gearConv: "4.86%", baseFinalDmg: 45.014 },
+        { name: "칠흑 + 자연", mainDmg: "418.9%", oathDmg: "482.5%", cdrConvStd: 61.11, gearConv: "3.78%", baseFinalDmg: 50.538 },
+        { name: "마력 1", mainDmg: "456.4%", oathDmg: "590.0%", cdrConvStd: 0, gearConv: "12.60%", baseFinalDmg: 43.229 },
+        { name: "마력 2", mainDmg: "456.4%", oathDmg: "464.0%", cdrConvStd: 0, gearConv: "44.69%", baseFinalDmg: 46.313 },
+        { name: "마력 3", mainDmg: "-", oathDmg: "473.2%", cdrConvStd: 0, gearConv: "46.20%", baseFinalDmg: 46.627 },
+        { name: "황금향 + 마력", mainDmg: "532.7%", oathDmg: "464.0%", cdrConvStd: 0, gearConv: "7.38%", baseFinalDmg: 44.632 },
+        { name: "칠흑 + 마력", mainDmg: "418.9%", oathDmg: "464.0%", cdrConvStd: 61.11, gearConv: "6.30%", baseFinalDmg: 50.121 },
+        { name: "페어리 1", mainDmg: "462.8%", oathDmg: "488.0%", cdrConvStd: 0, gearConv: "25.81%", baseFinalDmg: 41.634 },
+        { name: "페어리 2", mainDmg: "462.8%", oathDmg: "476.2%", cdrConvStd: 0, gearConv: "37.76%", baseFinalDmg: 45.522 },
+        { name: "페어리 3", mainDmg: "-", oathDmg: "471.2%", cdrConvStd: 0, gearConv: "36.54%", baseFinalDmg: 43.894 },
+        { name: "황금향 + 페어리", mainDmg: "532.7%", oathDmg: "476.2%", cdrConvStd: 0, gearConv: "5.28%", baseFinalDmg: 44.706 },
+        { name: "칠흑 + 페어리", mainDmg: "418.9%", oathDmg: "476.2%", cdrConvStd: 61.11, gearConv: "4.20%", baseFinalDmg: 50.198 },
+        { name: "무리 1", mainDmg: "493.8%", oathDmg: "514.1%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 43.758 },
+        { name: "무리 2", mainDmg: "493.8%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 36.519 },
+        { name: "무리 3", mainDmg: "-", oathDmg: "517.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 36.637 },
+        { name: "황금향 + 무리", mainDmg: "532.7%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.014 },
+        { name: "칠흑 + 무리", mainDmg: "418.9%", oathDmg: "500.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.160 },
+        { name: "한계 1", mainDmg: "460.7%", oathDmg: "384.0%", cdrConvStd: 0, gearConv: "2.87%", baseFinalDmg: 27.917 },
+        { name: "한계 2", mainDmg: "460.7%", oathDmg: "457.0%", cdrConvStd: 0, gearConv: "2.39%", baseFinalDmg: 33.576 },
+        { name: "한계 3", mainDmg: "-", oathDmg: "417.0%", cdrConvStd: 0, gearConv: "1.98%", baseFinalDmg: 29.562 },
+        { name: "황금향 + 한계", mainDmg: "532.7%", oathDmg: "457.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 41.788 },
+        { name: "칠흑 + 한계", mainDmg: "418.9%", oathDmg: "457.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 46.565 },
+      ];
 
-        // State Management
-        let appState = {
-            data: [],
-            sortCol: 'finalDmg',
-            sortAsc: false,
-            searchQuery: ''
-        };
+      let appData = [];
+      let state = {
+        ratio: 100,
+        sortCol: "finalDmg",
+        sortAsc: false,
+        searchQuery: "",
+      };
 
-        // Utility: Parse Percentage Strings to Floats
-        function parseFloatFromStr(str) {
-            if (!str || str === '-') return 0;
-            const match = str.match(/-?\d+(\.\d+)?/);
-            return match ? parseFloat(match[0]) : 0;
-        }
+      function parsePercent(str) {
+        if (!str || str === "-") return 0;
+        return parseFloat(str.replace(/[^0-9.-]/g, ""));
+      }
 
-        // Initialize Data
-        function initData() {
-            appState.data = rawData.map(item => ({
-                ...item,
-                pMainDmg: parseFloatFromStr(item.mainDmg),
-                pOathDmg: parseFloatFromStr(item.oathDmg),
-                pCdrConv: parseFloatFromStr(item.cdrConv),
-                pGearConv: parseFloatFromStr(item.gearConv),
-                pFinalDmg: parseFloat(item.finalDmg)
-            }));
-            renderTable();
-            renderCharts();
-        }
+      function initData() {
+        appData = rawData.map((d) => ({
+          name: d.name,
+          mainDmg: parsePercent(d.mainDmg),
+          oathDmg: parsePercent(d.oathDmg),
+          cdrConvStd: d.cdrConvStd,
+          gearConv: parsePercent(d.gearConv),
+          baseFinalDmg: d.baseFinalDmg,
+          // Dynamic fields
+          cdrConvAdj: 0,
+          finalDmg: 0,
+        }));
+        updateCalculations();
+      }
 
-        // --- Charts Implementation ---
-        let scatterChartInstance = null;
-        let barChartInstance = null;
+      function updateCalculations() {
+        const ratio = state.ratio / 100;
+        appData.forEach((d) => {
+          // 쿨감 스증환산을 비율에 따라 조절
+          d.cdrConvAdj = d.cdrConvStd * ratio;
 
-        function renderCharts() {
-            // 1. Scatter Plot (CDR Conv vs Final Dmg)
-            // Filter only combinations that have some CDR conversion
-            const scatterData = appState.data.map(d => ({
-                x: d.pCdrConv,
-                y: d.pFinalDmg,
-                label: d.name
-            }));
-
-            const ctxScatter = document.getElementById('scatterChart').getContext('2d');
-            if (scatterChartInstance) scatterChartInstance.destroy();
-            
-            scatterChartInstance = new Chart(ctxScatter, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: '조합 데이터',
-                        data: scatterData,
-                        backgroundColor: 'rgba(79, 70, 229, 0.6)', // Indigo-600
-                        borderColor: 'rgba(67, 56, 202, 1)', // Indigo-700
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) {
-                                    return `${ctx.raw.label} (쿨감환산: ${ctx.raw.x}%, 딜: ${ctx.raw.y})`;
-                                }
-                            }
-                        },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            title: { display: true, text: '쿨감 스증환산 (%)', font: { weight: 'bold' } },
-                            grid: { color: '#f1f5f9' }
-                        },
-                        y: {
-                            title: { display: true, text: '최종 데미지', font: { weight: 'bold' } },
-                            grid: { color: '#f1f5f9' }
-                        }
-                    }
-                }
-            });
-
-            // 2. Bar Chart (Top 10 Final Damage)
-            const sortedForBar = [...appState.data].sort((a, b) => b.pFinalDmg - a.pFinalDmg).slice(0, 10);
-            const ctxBar = document.getElementById('barChart').getContext('2d');
-            if (barChartInstance) barChartInstance.destroy();
-
-            barChartInstance = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: sortedForBar.map(d => d.name),
-                    datasets: [{
-                        label: '최종 데미지',
-                        data: sortedForBar.map(d => d.pFinalDmg),
-                        backgroundColor: sortedForBar.map((d, i) => i === 0 ? 'rgba(225, 29, 72, 0.8)' : 'rgba(99, 102, 241, 0.7)'), // Rose for top, Indigo for rest
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    indexAxis: 'y', // Horizontal bar
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) { return `최종 데미지: ${ctx.raw}`; }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            title: { display: true, text: '최종 데미지', font: { weight: 'bold' } },
-                            grid: { color: '#f1f5f9' }
-                        },
-                        y: {
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        // --- Table Implementation ---
-        function renderTable() {
-            const tbody = document.getElementById('dataTableBody');
-            tbody.innerHTML = '';
-
-            // Filter
-            let filtered = appState.data.filter(item => 
-                item.name.toLowerCase().includes(appState.searchQuery.toLowerCase())
-            );
-
-            // Sort
-            filtered.sort((a, b) => {
-                let valA = a[appState.sortCol] !== undefined ? a[appState.sortCol] : a['p' + appState.sortCol.charAt(0).toUpperCase() + appState.sortCol.slice(1)];
-                let valB = b[appState.sortCol] !== undefined ? b[appState.sortCol] : b['p' + appState.sortCol.charAt(0).toUpperCase() + appState.sortCol.slice(1)];
-                
-                if (typeof valA === 'string') valA = valA.toLowerCase();
-                if (typeof valB === 'string') valB = valB.toLowerCase();
-
-                if (valA < valB) return appState.sortAsc ? -1 : 1;
-                if (valA > valB) return appState.sortAsc ? 1 : -1;
-                return 0;
-            });
-
-            // Render
-            filtered.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                tr.className = index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50 hover:bg-slate-100';
-                
-                // Highlight cells logic
-                const cdrClass = parseFloatFromStr(row.cdrConv) > 50 ? 'text-rose-600 font-bold' : 'text-slate-600';
-                const finalClass = 'font-bold text-indigo-700';
-
-                tr.innerHTML = `
-                    <td class="p-4 border-b border-slate-200 font-medium text-slate-900">${row.name}</td>
-                    <td class="p-4 border-b border-slate-200 text-slate-600">${row.mainDmg}</td>
-                    <td class="p-4 border-b border-slate-200 text-slate-600">${row.oathDmg}</td>
-                    <td class="p-4 border-b border-slate-200 text-xs text-slate-500">
-                        본: ${row.mainSkill}<br>서: ${row.oathSkill}
-                    </td>
-                    <td class="p-4 border-b border-slate-200 ${cdrClass} bg-indigo-50/30">${row.cdrConv}</td>
-                    <td class="p-4 border-b border-slate-200 text-slate-600">${row.gearConv}</td>
-                    <td class="p-4 border-b border-slate-200 ${finalClass} bg-indigo-50/50">${row.finalDmg}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Interactions
-        function sortTable(col) {
-            if (appState.sortCol === col) {
-                appState.sortAsc = !appState.sortAsc;
-            } else {
-                appState.sortCol = col;
-                appState.sortAsc = false; // Default to descending for numbers
-            }
-            renderTable();
-        }
-
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            appState.searchQuery = e.target.value;
-            renderTable();
+          // 최종뎀 = 기준최종뎀 / (1 + 기준쿨감환산) × (1 + 조절쿨감환산)
+          if (d.cdrConvStd === 0) {
+            d.finalDmg = d.baseFinalDmg;
+          } else {
+            d.finalDmg =
+              (d.baseFinalDmg / (1 + d.cdrConvStd / 100)) *
+              (1 + d.cdrConvAdj / 100);
+          }
         });
 
-        // Initialize
-        window.onload = initData;
+        updateStats();
+        renderCharts();
+        renderTable();
+      }
 
+      function updateStats() {
+        const sorted = [...appData].sort((a, b) => b.finalDmg - a.finalDmg);
+        document.getElementById("topBuildName").innerText = sorted[0].name;
+
+        const avg =
+          appData.reduce((a, b) => a + b.finalDmg, 0) / appData.length;
+        document.getElementById("avgFinalDmg").innerText = avg.toFixed(3);
+
+        const range = sorted[0].finalDmg - sorted[sorted.length - 1].finalDmg;
+        document.getElementById("dmgRange").innerText = range.toFixed(3);
+      }
+
+      let scatterChart = null;
+      let barChart = null;
+
+      function renderCharts() {
+        // Scatter
+        const scatterCtx = document
+          .getElementById("scatterChart")
+          .getContext("2d");
+        const scatterPoints = appData.map((d) => ({
+          x: d.cdrConvAdj,
+          y: d.finalDmg,
+          label: d.name,
+        }));
+
+        if (scatterChart) scatterChart.destroy();
+        scatterChart = new Chart(scatterCtx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "조합 데이터",
+                data: scatterPoints,
+                backgroundColor: "rgba(79, 70, 229, 0.6)",
+                borderColor: "#4338ca",
+                pointRadius: 5,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: (c) =>
+                    `${c.raw.label}: 쿨감환산 ${c.raw.x.toFixed(2)}%, 최종뎀 ${c.raw.y.toFixed(3)}`,
+                },
+              },
+              legend: { display: false },
+            },
+            scales: {
+              x: {
+                title: { display: true, text: "쿨감 스증환산 (%)" },
+                grid: { color: "#f1f5f9" },
+              },
+              y: {
+                title: { display: true, text: "최종 데미지" },
+                grid: { color: "#f1f5f9" },
+              },
+            },
+          },
+        });
+
+        // Bar
+        const barCtx = document.getElementById("barChart").getContext("2d");
+        const top10 = [...appData]
+          .sort((a, b) => b.finalDmg - a.finalDmg)
+          .slice(0, 10);
+
+        if (barChart) barChart.destroy();
+        barChart = new Chart(barCtx, {
+          type: "bar",
+          data: {
+            labels: top10.map((d) => d.name),
+            datasets: [
+              {
+                label: "최종 데미지",
+                data: top10.map((d) => d.finalDmg),
+                backgroundColor: top10.map((_, i) =>
+                  i === 0 ? "#e11d48" : "#6366f1",
+                ),
+                borderRadius: 4,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { title: { display: true, text: "최종 데미지" } },
+              y: { grid: { display: false } },
+            },
+          },
+        });
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById("dataTableBody");
+        tbody.innerHTML = "";
+
+        let filtered = appData.filter((d) =>
+          d.name.toLowerCase().includes(state.searchQuery.toLowerCase()),
+        );
+
+        filtered.sort((a, b) => {
+          let vA = a[state.sortCol],
+            vB = b[state.sortCol];
+          if (typeof vA === "string") {
+            vA = vA.toLowerCase();
+            vB = vB.toLowerCase();
+          }
+          return state.sortAsc ? (vA > vB ? 1 : -1) : vA < vB ? 1 : -1;
+        });
+
+        filtered.forEach((d) => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition-colors";
+          tr.innerHTML = `
+                    <td class="p-4 border-b font-medium text-slate-900">${d.name}</td>
+                    <td class="p-4 border-b text-slate-600">${d.mainDmg > 0 ? d.mainDmg.toFixed(1) + "%" : "-"}</td>
+                    <td class="p-4 border-b text-slate-600">${d.oathDmg > 0 ? d.oathDmg.toFixed(1) + "%" : "-"}</td>
+                    <td class="p-4 border-b bg-indigo-50/30 font-semibold ${d.cdrConvAdj > 50 ? "text-rose-600" : d.cdrConvAdj < 0 ? "text-blue-600" : "text-slate-600"}">${d.cdrConvAdj !== 0 ? d.cdrConvAdj.toFixed(2) + "%" : "-"}</td>
+                    <td class="p-4 border-b text-slate-600">${d.gearConv > 0 ? d.gearConv.toFixed(2) + "%" : "-"}</td>
+                    <td class="p-4 border-b bg-indigo-50/50 font-bold text-indigo-700">${d.finalDmg.toFixed(3)}</td>
+                `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function sortTable(col) {
+        if (state.sortCol === col) state.sortAsc = !state.sortAsc;
+        else {
+          state.sortCol = col;
+          state.sortAsc = false;
+        }
+        renderTable();
+      }
+
+      // Controllers
+      const slider = document.getElementById("ratioSlider");
+      const input = document.getElementById("ratioInput");
+      const search = document.getElementById("searchInput");
+
+      slider.oninput = (e) => {
+        state.ratio = parseInt(e.target.value);
+        input.value = state.ratio;
+        updateCalculations();
+      };
+
+      input.oninput = (e) => {
+        let val = parseInt(e.target.value);
+        if (isNaN(val)) val = 70;
+        state.ratio = Math.min(Math.max(val, 70), 100);
+        slider.value = state.ratio;
+        updateCalculations();
+      };
+
+      search.oninput = (e) => {
+        state.searchQuery = e.target.value;
+        renderTable();
+      };
+
+      window.onload = initData;
     </script>
-</body>
+  </body>
 </html>
