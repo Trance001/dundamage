@@ -176,12 +176,23 @@
               비율 조절에 따라 실시간으로 변화하는 수치를 확인하세요.
             </p>
           </div>
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="조합명 검색..."
-            class="px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm w-full md:w-64"
-          />
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="조합명 검색..."
+              class="px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm w-full md:w-48"
+            />
+            <button onclick="downloadCSV()" class="px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors whitespace-nowrap">CSV 다운로드</button>
+            <label class="px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition-colors cursor-pointer whitespace-nowrap">
+              CSV 업로드
+              <input type="file" id="csvUpload" accept=".csv" class="hidden" onchange="handleUpload(event)" />
+            </label>
+            <button onclick="resetToDefault()" id="resetBtn" class="px-3 py-2 bg-slate-500 text-white text-sm font-medium rounded-md hover:bg-slate-600 transition-colors whitespace-nowrap hidden">초기화</button>
+          </div>
+        </div>
+        <div id="dataSourceBanner" class="hidden px-6 py-2 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-sm font-medium">
+          사용자 데이터가 적용되었습니다. 원본으로 되돌리려면 [초기화] 버튼을 누르세요.
         </div>
 
         <div class="table-container overflow-x-auto max-h-[600px]">
@@ -291,65 +302,8 @@
     </footer>
 
     <script>
-      // 던전앤파이터 장비 조합 데이터 시트.md 기준 전체 데이터
-      // cdrConvStd: 시트 기준 쿨감 스증환산(%), baseFinalDmg: 시트 기준 최종뎀
-      const rawData = [
-        { name: "황금향 1", mainDmg: "-", oathDmg: "518.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 44.262 },
-        { name: "황금향 2", mainDmg: "532.7%", oathDmg: "471.7%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 46.696 },
-        { name: "황금향 3", mainDmg: "-", oathDmg: "497.1%", cdrConvStd: 0, gearConv: "2.78%", baseFinalDmg: 42.711 },
-        { name: "칠흑 + 황금향", mainDmg: "418.9%", oathDmg: "471.7%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 52.971 },
-        { name: "칠흑 1", mainDmg: "-", oathDmg: "502.9%", cdrConvStd: 65.446, gearConv: "-", baseFinalDmg: 51.759 },
-        { name: "칠흑 2", mainDmg: "418.9%", oathDmg: "471.4%", cdrConvStd: 29.36, gearConv: "-", baseFinalDmg: 45.969 },
-        { name: "칠흑 3", mainDmg: "-", oathDmg: "505.1%", cdrConvStd: -4.50, gearConv: "-", baseFinalDmg: 42.580 },
-        { name: "황금향 + 칠흑", mainDmg: "532.7%", oathDmg: "471.4%", cdrConvStd: 5.50, gearConv: "1.08%", baseFinalDmg: 45.226 },
-        { name: "용투 1", mainDmg: "594.1%", oathDmg: "428.1%", cdrConvStd: 0, gearConv: "8.91%", baseFinalDmg: 43.175 },
-        { name: "용투 2", mainDmg: "594.1%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "3.24%", baseFinalDmg: 45.392 },
-        { name: "용투 3", mainDmg: "-", oathDmg: "406.8%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 45.730 },
-        { name: "황금향 + 용투", mainDmg: "532.7%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.014 },
-        { name: "칠흑 + 용투", mainDmg: "418.9%", oathDmg: "500.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.160 },
-        { name: "에테 1", mainDmg: "-", oathDmg: "625.8%", cdrConvStd: 0, gearConv: "15.93%", baseFinalDmg: 45.201 },
-        { name: "에테 2", mainDmg: "437.2%", oathDmg: "330.7%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 46.686 },
-        { name: "에테 3", mainDmg: "-", oathDmg: "657.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 40.666 },
-        { name: "황금향 + 에테", mainDmg: "532.7%", oathDmg: "330.7%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.237 },
-        { name: "칠흑 + 에테", mainDmg: "418.9%", oathDmg: "330.7%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.409 },
-        { name: "그림자 1", mainDmg: "615.4%", oathDmg: "478.2%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 45.501 },
-        { name: "그림자 2", mainDmg: "-", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "4.20%", baseFinalDmg: 44.727 },
-        { name: "그림자 3", mainDmg: "-", oathDmg: "518.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 44.212 },
-        { name: "황금향 + 그림자", mainDmg: "532.7%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.014 },
-        { name: "칠흑 + 그림자", mainDmg: "418.9%", oathDmg: "500.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.160 },
-        { name: "발키리 1", mainDmg: "569.8%", oathDmg: "529.0%", cdrConvStd: 0, gearConv: "2.76%", baseFinalDmg: 43.293 },
-        { name: "발키리 2", mainDmg: "569.8%", oathDmg: "472.4%", cdrConvStd: 0, gearConv: "10.60%", baseFinalDmg: 43.675 },
-        { name: "발키리 3", mainDmg: "569.8%", oathDmg: "411.9%", cdrConvStd: 0, gearConv: "25.59%", baseFinalDmg: 43.061 },
-        { name: "황금향 + 발키리", mainDmg: "532.7%", oathDmg: "472.4%", cdrConvStd: 0, gearConv: "5.76%", baseFinalDmg: 44.613 },
-        { name: "칠흑 + 발키리", mainDmg: "418.9%", oathDmg: "472.4%", cdrConvStd: 61.11, gearConv: "4.69%", baseFinalDmg: 50.097 },
-        { name: "자연 1", mainDmg: "558.3%", oathDmg: "564.5%", cdrConvStd: 0, gearConv: "1.70%", baseFinalDmg: 44.488 },
-        { name: "자연 2", mainDmg: "558.3%", oathDmg: "482.5%", cdrConvStd: 0, gearConv: "12.03%", baseFinalDmg: 44.463 },
-        { name: "자연 3", mainDmg: "-", oathDmg: "537.5%", cdrConvStd: 0, gearConv: "4.86%", baseFinalDmg: 44.006 },
-        { name: "황금향 + 자연", mainDmg: "532.7%", oathDmg: "482.5%", cdrConvStd: 0, gearConv: "4.86%", baseFinalDmg: 45.014 },
-        { name: "칠흑 + 자연", mainDmg: "418.9%", oathDmg: "482.5%", cdrConvStd: 61.11, gearConv: "3.78%", baseFinalDmg: 50.538 },
-        { name: "마력 1", mainDmg: "456.4%", oathDmg: "590.0%", cdrConvStd: 0, gearConv: "12.60%", baseFinalDmg: 43.229 },
-        { name: "마력 2", mainDmg: "456.4%", oathDmg: "464.0%", cdrConvStd: 0, gearConv: "44.69%", baseFinalDmg: 46.313 },
-        { name: "마력 3", mainDmg: "-", oathDmg: "473.2%", cdrConvStd: 0, gearConv: "46.20%", baseFinalDmg: 46.627 },
-        { name: "황금향 + 마력", mainDmg: "532.7%", oathDmg: "464.0%", cdrConvStd: 0, gearConv: "7.38%", baseFinalDmg: 44.632 },
-        { name: "칠흑 + 마력", mainDmg: "418.9%", oathDmg: "464.0%", cdrConvStd: 61.11, gearConv: "6.30%", baseFinalDmg: 50.121 },
-        { name: "페어리 1", mainDmg: "462.8%", oathDmg: "488.0%", cdrConvStd: 0, gearConv: "25.81%", baseFinalDmg: 41.634 },
-        { name: "페어리 2", mainDmg: "462.8%", oathDmg: "476.2%", cdrConvStd: 0, gearConv: "37.76%", baseFinalDmg: 45.522 },
-        { name: "페어리 3", mainDmg: "-", oathDmg: "471.2%", cdrConvStd: 0, gearConv: "36.54%", baseFinalDmg: 43.894 },
-        { name: "황금향 + 페어리", mainDmg: "532.7%", oathDmg: "476.2%", cdrConvStd: 0, gearConv: "5.28%", baseFinalDmg: 44.706 },
-        { name: "칠흑 + 페어리", mainDmg: "418.9%", oathDmg: "476.2%", cdrConvStd: 61.11, gearConv: "4.20%", baseFinalDmg: 50.198 },
-        { name: "무리 1", mainDmg: "493.8%", oathDmg: "514.1%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 43.758 },
-        { name: "무리 2", mainDmg: "493.8%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 36.519 },
-        { name: "무리 3", mainDmg: "-", oathDmg: "517.0%", cdrConvStd: 0, gearConv: "-", baseFinalDmg: 36.637 },
-        { name: "황금향 + 무리", mainDmg: "532.7%", oathDmg: "500.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 45.014 },
-        { name: "칠흑 + 무리", mainDmg: "418.9%", oathDmg: "500.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 50.160 },
-        { name: "한계 1", mainDmg: "460.7%", oathDmg: "384.0%", cdrConvStd: 0, gearConv: "2.87%", baseFinalDmg: 27.917 },
-        { name: "한계 2", mainDmg: "460.7%", oathDmg: "457.0%", cdrConvStd: 0, gearConv: "2.39%", baseFinalDmg: 33.576 },
-        { name: "한계 3", mainDmg: "-", oathDmg: "417.0%", cdrConvStd: 0, gearConv: "1.98%", baseFinalDmg: 29.562 },
-        { name: "황금향 + 한계", mainDmg: "532.7%", oathDmg: "457.0%", cdrConvStd: 0, gearConv: "1.08%", baseFinalDmg: 41.788 },
-        { name: "칠흑 + 한계", mainDmg: "418.9%", oathDmg: "457.0%", cdrConvStd: 61.11, gearConv: "-", baseFinalDmg: 46.565 },
-      ];
-
       let appData = [];
+      let isCustomData = false;
       let state = {
         ratio: 100,
         sortCol: "finalDmg",
@@ -362,28 +316,145 @@
         return parseFloat(str.replace(/[^0-9.-]/g, ""));
       }
 
-      function initData() {
-        appData = rawData.map((d) => ({
-          name: d.name,
-          mainDmg: parsePercent(d.mainDmg),
-          oathDmg: parsePercent(d.oathDmg),
-          cdrConvStd: d.cdrConvStd,
-          gearConv: parsePercent(d.gearConv),
-          baseFinalDmg: d.baseFinalDmg,
-          // Dynamic fields
-          cdrConvAdj: 0,
-          finalDmg: 0,
-        }));
+      // CSV 파싱: 텍스트 → 데이터 배열
+      function parseCSV(text) {
+        const lines = text.trim().split("\n");
+        if (lines.length < 2) return [];
+        // 첫 줄은 헤더: 조합명,본장비 최종뎀,서약 최종뎀,쿨감 스증환산,장비딜 스증환산,최종뎀
+        return lines.slice(1).filter(l => l.trim()).map((line) => {
+          const cols = line.split(",");
+          return {
+            name: cols[0].trim(),
+            mainDmg: parsePercent(cols[1]),
+            oathDmg: parsePercent(cols[2]),
+            cdrConvStd: parseFloat(cols[3]) || 0,
+            gearConv: parsePercent(cols[4]),
+            baseFinalDmg: parseFloat(cols[5]) || 0,
+            // 원본 문자열 보존 (다운로드용)
+            mainDmgRaw: cols[1].trim(),
+            oathDmgRaw: cols[2].trim(),
+            gearConvRaw: cols[4].trim(),
+            cdrConvAdj: 0,
+            finalDmg: 0,
+          };
+        });
+      }
+
+      // 내장 CSV 데이터
+      const embeddedCSV = `조합명,본장비 최종뎀,서약 최종뎀,쿨감 스증환산,장비딜 스증환산,최종뎀
+황금향 1,-,518.0%,0,-,44.262
+황금향 2,532.7%,471.7%,0,-,46.696
+황금향 3,-,497.1%,0,2.78%,42.711
+칠흑 + 황금향,418.9%,471.7%,61.11,-,52.971
+칠흑 1,-,502.9%,65.446,-,51.759
+칠흑 2,418.9%,471.4%,29.36,-,45.969
+칠흑 3,-,505.1%,-4.50,-,42.580
+황금향 + 칠흑,532.7%,471.4%,5.50,1.08%,45.226
+용투 1,594.1%,428.1%,0,8.91%,43.175
+용투 2,594.1%,500.0%,0,3.24%,45.392
+용투 3,-,406.8%,0,-,45.730
+황금향 + 용투,532.7%,500.0%,0,1.08%,45.014
+칠흑 + 용투,418.9%,500.0%,61.11,-,50.160
+에테 1,-,625.8%,0,15.93%,45.201
+에테 2,437.2%,330.7%,0,-,46.686
+에테 3,-,657.0%,0,-,40.666
+황금향 + 에테,532.7%,330.7%,0,1.08%,45.237
+칠흑 + 에테,418.9%,330.7%,61.11,-,50.409
+그림자 1,615.4%,478.2%,0,-,45.501
+그림자 2,-,500.0%,0,4.20%,44.727
+그림자 3,-,518.0%,0,-,44.212
+황금향 + 그림자,532.7%,500.0%,0,1.08%,45.014
+칠흑 + 그림자,418.9%,500.0%,61.11,-,50.160
+발키리 1,569.8%,529.0%,0,2.76%,43.293
+발키리 2,569.8%,472.4%,0,10.60%,43.675
+발키리 3,569.8%,411.9%,0,25.59%,43.061
+황금향 + 발키리,532.7%,472.4%,0,5.76%,44.613
+칠흑 + 발키리,418.9%,472.4%,61.11,4.69%,50.097
+자연 1,558.3%,564.5%,0,1.70%,44.488
+자연 2,558.3%,482.5%,0,12.03%,44.463
+자연 3,-,537.5%,0,4.86%,44.006
+황금향 + 자연,532.7%,482.5%,0,4.86%,45.014
+칠흑 + 자연,418.9%,482.5%,61.11,3.78%,50.538
+마력 1,456.4%,590.0%,0,12.60%,43.229
+마력 2,456.4%,464.0%,0,44.69%,46.313
+마력 3,-,473.2%,0,46.20%,46.627
+황금향 + 마력,532.7%,464.0%,0,7.38%,44.632
+칠흑 + 마력,418.9%,464.0%,61.11,6.30%,50.121
+페어리 1,462.8%,488.0%,0,25.81%,41.634
+페어리 2,462.8%,476.2%,0,37.76%,45.522
+페어리 3,-,471.2%,0,36.54%,43.894
+황금향 + 페어리,532.7%,476.2%,0,5.28%,44.706
+칠흑 + 페어리,418.9%,476.2%,61.11,4.20%,50.198
+무리 1,493.8%,514.1%,0,-,43.758
+무리 2,493.8%,500.0%,0,-,36.519
+무리 3,-,517.0%,0,-,36.637
+황금향 + 무리,532.7%,500.0%,0,1.08%,45.014
+칠흑 + 무리,418.9%,500.0%,61.11,-,50.160
+한계 1,460.7%,384.0%,0,2.87%,27.917
+한계 2,460.7%,457.0%,0,2.39%,33.576
+한계 3,-,417.0%,0,1.98%,29.562
+황금향 + 한계,532.7%,457.0%,0,1.08%,41.788
+칠흑 + 한계,418.9%,457.0%,61.11,-,46.565`;
+
+      // 내장 데이터로 초기화
+      function loadDefaultData() {
+        appData = parseCSV(embeddedCSV);
+        isCustomData = false;
+        document.getElementById("dataSourceBanner").classList.add("hidden");
+        document.getElementById("resetBtn").classList.add("hidden");
         updateCalculations();
+      }
+
+      // 업로드된 CSV 처리
+      function handleUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const parsed = parseCSV(e.target.result);
+          if (parsed.length === 0) {
+            alert("CSV 파싱 실패: 데이터가 없거나 형식이 올바르지 않습니다.");
+            return;
+          }
+          appData = parsed;
+          isCustomData = true;
+          document.getElementById("dataSourceBanner").classList.remove("hidden");
+          document.getElementById("resetBtn").classList.remove("hidden");
+          updateCalculations();
+        };
+        reader.readAsText(file, "UTF-8");
+        event.target.value = "";
+      }
+
+      // CSV 다운로드
+      function downloadCSV() {
+        const header = "조합명,본장비 최종뎀,서약 최종뎀,쿨감 스증환산,장비딜 스증환산,최종뎀";
+        const rows = appData.map((d) => {
+          const mainDmg = d.mainDmgRaw || (d.mainDmg > 0 ? d.mainDmg.toFixed(1) + "%" : "-");
+          const oathDmg = d.oathDmgRaw || (d.oathDmg > 0 ? d.oathDmg.toFixed(1) + "%" : "-");
+          const gearConv = d.gearConvRaw || (d.gearConv > 0 ? d.gearConv.toFixed(2) + "%" : "-");
+          return `${d.name},${mainDmg},${oathDmg},${d.cdrConvStd},${gearConv},${d.baseFinalDmg}`;
+        });
+        const csv = "\uFEFF" + header + "\n" + rows.join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "던전앤파이터_장비조합_데이터.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // 초기화 (원본 데이터로 복원)
+      function resetToDefault() {
+        loadDefaultData();
       }
 
       function updateCalculations() {
         const ratio = state.ratio / 100;
         appData.forEach((d) => {
-          // 쿨감 스증환산을 비율에 따라 조절
           d.cdrConvAdj = d.cdrConvStd * ratio;
 
-          // 최종뎀 = 기준최종뎀 / (1 + 기준쿨감환산) × (1 + 조절쿨감환산)
           if (d.cdrConvStd === 0) {
             d.finalDmg = d.baseFinalDmg;
           } else {
@@ -607,7 +678,7 @@
         renderTable();
       };
 
-      window.onload = initData;
+      window.onload = loadDefaultData;
     </script>
   </body>
 </html>
