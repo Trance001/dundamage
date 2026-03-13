@@ -297,6 +297,60 @@
       </div>
     </section>
 
+    <!-- 수정내역 -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-900 mb-4 border-b border-slate-200 pb-2">수정내역</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-4 py-2 font-semibold text-slate-600 border-b w-32">날짜</th>
+                <th class="px-4 py-2 font-semibold text-slate-600 border-b">내용</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="px-4 py-3 text-slate-500 align-top whitespace-nowrap">2026-03-13</td>
+                <td class="px-4 py-3 text-slate-700">
+                  <span class="font-semibold text-rose-600">[데이터 수정]</span> 칠흑+황금향 조합의 서약 스증 오류 수정<br>
+                  <span class="text-slate-500 text-xs">황금향 하위 옵션(0.5%, 1.5%, 2.5%)이 칠흑+황금향 조합에서 적용되지 않아야 하나 포함되어 있던 문제 수정. 서약 스증: 6%+0.5%+1.5%+2.5% → 6%, 최종뎀: 52.971 → 50.664</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-slate-500 align-top whitespace-nowrap">2026-03-13</td>
+                <td class="px-4 py-3 text-slate-700">
+                  <span class="font-semibold text-emerald-600">[기능 추가]</span> CSV 다운로드/업로드 기능 추가<br>
+                  <span class="text-slate-500 text-xs">데이터를 CSV로 다운로드하여 Excel에서 수정 후 업로드하면 클라이언트에서 즉시 반영. 내장 CSV로 초기 로드하여 file:// 호환.</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-slate-500 align-top whitespace-nowrap">2026-03-13</td>
+                <td class="px-4 py-3 text-slate-700">
+                  <span class="font-semibold text-emerald-600">[기능 추가]</span> 전체 53개 조합 랭킹 차트 및 공식/우려사항 섹션 추가<br>
+                  <span class="text-slate-500 text-xs">전체 세트 조합 데미지 랭킹 바 차트 추가 (쿨감 유무 색상 구분). 하단에 최종 데미지 계산 공식 및 우려사항 5가지 명시.</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-slate-500 align-top whitespace-nowrap">2026-03-13</td>
+                <td class="px-4 py-3 text-slate-700">
+                  <span class="font-semibold text-indigo-600">[개선]</span> 쿨감 실전 반영 비율 슬라이더 범위 변경 및 데이터 동기화<br>
+                  <span class="text-slate-500 text-xs">슬라이더 범위를 0~100%에서 70~100%로 변경. MD 시트 기준 전체 53개 조합 데이터 반영 (기존 23개). 계산 로직을 MD 기준값 기반으로 개선.</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 text-slate-500 align-top whitespace-nowrap">2026-03-13</td>
+                <td class="px-4 py-3 text-slate-700">
+                  <span class="font-semibold text-slate-600">[초기]</span> 대시보드 최초 생성<br>
+                  <span class="text-slate-500 text-xs">쿨감 환산 비율 조절 슬라이더, 상관관계 산점도, Top 10 랭킹 차트, 상세 데이터 테이블 포함.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm">
       <p>※ 쿨감 환산 공식: 쿨감 효율 = (1 / (1 - 쿨감)) - 1 × 반영 비율</p>
     </footer>
@@ -345,7 +399,7 @@
 황금향 1,-,518.0%,0,-,44.262
 황금향 2,532.7%,471.7%,0,-,46.696
 황금향 3,-,497.1%,0,2.78%,42.711
-칠흑 + 황금향,418.9%,471.7%,61.11,-,52.971
+칠흑 + 황금향,418.9%,471.7%,61.11,-,50.664
 칠흑 1,-,502.9%,65.446,-,51.759
 칠흑 2,418.9%,471.4%,29.36,-,45.969
 칠흑 3,-,505.1%,-4.50,-,42.580
